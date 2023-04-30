@@ -4,36 +4,36 @@ use [EasyMarket]
 
 create proc SegmentInBrand @Month tinyint, @Year smallint
 AS
---לטבלת סגמנט cross join הבאת כל החניות עם מדדים ושילוב בעזרת  
+--  
 select B.*, MF.memberCode, Mf.frequency,MF.totalMoney,S.segmentName,S.minFreq,S.totalMoney as StotalMoney
 into #MS
 from tblBrand B inner join tblMeasuresFor MF on B.brandCode = MF.brandCode cross join tblSegment S
 where MF.mMonth = @Month and MF.mYear = @Year 
 order by memberCode, brandCode
 
----הוספה לטבלה שיצרנו גם את אופצית אין סטגמנט 
+---
 select ms.*
 into #AllStigment
 from #MS ms
 union 
-select ms.brandCode,ms.brandName, ms.memberCode, ms.frequency,ms.totalMoney, N'אין סטגמנט',0,0
+select ms.brandCode,ms.brandName, ms.memberCode, ms.frequency,ms.totalMoney, N'No Segment',0,0
 from #MS ms 
 
----הוספת תנאים לטבלה 
+---
 select Als.*
 into #Mioon
 from #AllStigment Als
 where frequency>minFreq and totalMoney>StotalMoney
 order by memberCode, brandCode
 
----וכך יכולנו להוציא את מי ששייך לו הסטגמנט הרלוונטי ROW_NUMBER סיווגנו בעזרת  
+--- 
 select brandCode,brandName,segmentName, COUNT(memberCode) as NoOfcustomersInSegment, AVG(totalMoney) AvgIncomePerSegment, AVG(frequency) AvgTotalSennInSegment
 from (	select * , ROW_NUMBER() over (partition by brandcode, membercode order by minfreq desc, totalmoney desc) as NumStag
 		from #Mioon ) RoniAmir
 where NumStag = 1
 group by brandCode,brandName,segmentName
 
----- בדיקה
+---- 
 exec SegmentInBrand 11,2020
 
 
@@ -48,7 +48,7 @@ from (	select B.brandCode,b.brandName,CM.gender
 		where mYear = @myear) X
 pivot( count(gender) for gender in (M,F,O) ) as SidorByGender
 
----- בדיקה
+---- 
 exec GenderInBrand 2020
 
 
@@ -57,12 +57,12 @@ exec GenderInBrand 2020
 create proc BarndByMonth @myear smallint
 AS
 select B.brandCode,B.brandName,X.mMonth,X.TotalMoneyInMonth,Y.TotalMoneyInYear,X.FreqInMonth,Y.FreqInyear
-from --טבלה לפי חודש 
+from -- 
 	(select MF.brandCode,MF.mMonth ,round(sum(MF.totalMoney),2) as TotalMoneyInMonth,SUM(MF.frequency) as FreqInMonth
 	from tblMeasuresFor MF
 	where Mf.mYear = @myear
 	group by MF.brandCode,MF.mMonth) X inner join
---- טבלה לפי שנה 
+--- 
 	(select MF.brandCode,round(sum(MF.totalMoney),2) as TotalMoneyInYear,SUM(MF.frequency) as FreqInyear
 	from tblMeasuresFor MF
 	where Mf.mYear = @myear
@@ -71,7 +71,7 @@ on X.brandCode = Y.brandCode
 inner join tblBrand B on X.brandCode = B.brandCode
 order by X.brandCode,mMonth 
 
----- בדיקה
+---- 
 exec BarndByMonth 2020
 
 -----tar 3 bonus
@@ -79,12 +79,12 @@ create proc BestMonthInBrand @year smallint
 as
 select B.brandCode,B.brandName,X.mMonth,X.TotalMoneyInMonth,Y.TotalMoneyInYear,X.FreqInMonth,Y.FreqInyear
 into #a
-from --טבלה לפי חודש 
+from --
 	(select MF.brandCode,MF.mMonth ,round(sum(MF.totalMoney),2)  as TotalMoneyInMonth,SUM(MF.frequency) as FreqInMonth
 	from tblMeasuresFor MF
 	where Mf.mYear = @year
 	group by MF.brandCode,MF.mMonth) X inner join
---- טבלה לפי שנה 
+---
 	(select MF.brandCode,round(sum(MF.totalMoney),2) as TotalMoneyInYear,SUM(MF.frequency) as FreqInyear
 	from tblMeasuresFor MF
 	where Mf.mYear = @year
@@ -97,5 +97,5 @@ from (select * , ROW_NUMBER() over (partition by brandcode order by TotalMoneyIn
 		from #a ) X
 where NumBrans = 1
 
------בדיקה
+----
 exec BestMonth 2020
